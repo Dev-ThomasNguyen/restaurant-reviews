@@ -1,61 +1,55 @@
 const db = require('./conn'),
     bcrypt = require('bcryptjs');
 
-class User {
-    constructor(id, first_name, last_name, email, password) {
-        this.id = id;
-        this.first_name = first_name;
-        this.last_name = last_nmae;
-        this.email = email;
-        this.assword = password;
-    }
-    //bcrypt can be SLOWWWW, so we'll wrap this in an async
-    checkPassword(hashedPassword) {
-        // syntax: bcrypt.compareSync(arg1, arg2);
-        // first argument is what the user put in the form
-        // second argument is the hasehed password
-        // returns true or false
-        return bcrypt.compareSync(this.password, hashedPassword);
+class user {
+
+    static async getAllRestaurants() {
+        const query = `SELECT * FROM restaurants ORDER BY id`;
+        return await getQuery(query);
     }
 
-    async save() {
-        try {
-            const response = await db.one(`
-                insert into users
-                    (first_name, last_name, email, password)
-                values
-                    ($1, $2, $3, $4)
-                returning id
-                `, [this.first_name, this.last_name, this.email, this.password]);
-            console.log("user was created with id:", response.id);
-            return response;
-        } catch(err) {
-            return err.message;
-        }
+    static async getOneRestaurant(id) {
+        const query = `SELECT * FROM restaurants WHERE id = ${id}`;
+        return await getQuery(query);
     }
 
-    async login() {
-        try {
-            const response = await db.one(`
-                select id, first_name, last_name, password
-                    from users
-                where email = $1`, [this.email]);
-            const isValid = await this.checkPassword(response.password);
-            if (!!valid) {
-            // if (isValid === absolutely, totally, like really, true)
-                // destructure the values we want from the response
-                const { first_name, last_name, id } = response;
-                // this line will return the isValid, first name, last name, and user id
-                return { isValid: isValid, first_name, last_name, user_id: id }
-            } else {
-                    // Just return the false isValid
-                return { isValid }
-            };
+    static async getOneRestaurantReviews(id) {
+        const query = `
+            SELECT B.id, B.restaurant_name, R.review, R.stars
+            FROM restaurants AS B, reviews AS R 
+            WHERE R.restaurant_id = ${id} AND B.id = ${id} ORDER BY B.id;`;
+        return await getQuery(query);
+    }
 
-        }catch(err) {
-            return err.message;
-        }
+    static async getAllRestaurantReviews() {
+        const query = `
+            SELECT B.id, B.restaurant_name, R.review, R.stars
+            FROM restaurant AS B, reviews AS R 
+            WHERE R.restaurant_id = B.id ORDER BY R.id;
+        `;
+
+        return await getQuery(query);
+    }
+
+    static async getAllReviews() {
+        const query = `SELECT * FROM reviews ORDER BY id`;
+        return await getQuery(query);
+    }
+
+    static async addReview(review, stars, id) {
+        const query = `INSERT INTO reviews (review, stars, restaurant_id) VALUES ('${review}',${parseInt(stars)},${id})`;
+        return await getQuery(query);
     }
 }
+
+async function getQuery(query) {
+    try {
+        const response = await db.result(query);
+        return response;
+    } catch (err) {
+        return err.message;
+    }
+}
+
 
 module.exports = User;
