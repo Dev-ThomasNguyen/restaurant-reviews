@@ -1,55 +1,63 @@
-const db = require('./conn'),
+const db = require('./conn.js'),
     bcrypt = require('bcryptjs');
 
-class user {
-
-    static async getAllRestaurants() {
-        const query = `SELECT * FROM restaurants ORDER BY id`;
-        return await getQuery(query);
+class User {
+    constructor(id, first_name, last_name, email, password) {
+        this.id = id;
+        this.first_name = first_name;
+        this.last_name = last_name;
+        this.email = email;
+        this.password = password;
     }
 
-    static async getOneRestaurant(id) {
-        const query = `SELECT * FROM restaurants WHERE id = ${id}`;
-        return await getQuery(query);
+    checkPassword(hashedPassword) {
+        return bcrypt.compareSync(this.password, hashedPassword);
     }
 
-    static async getOneRestaurantReviews(id) {
-        const query = `
-            SELECT B.id, B.restaurant_name, R.review, R.stars
-            FROM restaurants AS B, reviews AS R 
-            WHERE R.restaurant_id = ${id} AND B.id = ${id} ORDER BY B.id;`;
-        return await getQuery(query);
+    async save() {
+        try {
+            const response = await db.one(`
+                insert into users 
+                    (first_name, last_name, email, password) 
+                values 
+                    ($1, $2, $3, $4) 
+                returning id
+                `, [this.first_name, this.last_name, this.email, this.password]);
+            console.log("user was created with id:", response.id);
+            return response;
+        } catch (err) {
+            return err.message;
+        }
     }
 
-    static async getAllRestaurantReviews() {
-        const query = `
-            SELECT B.id, B.restaurant_name, R.review, R.stars
-            FROM restaurant AS B, reviews AS R 
-            WHERE R.restaurant_id = B.id ORDER BY R.id;
-        `;
-
-        return await getQuery(query);
+    async getOneUser() {
+        try {
+            const userData = await db.one(
+                Selection,
+            )
+        } catch(err) {
+            return err.message;
+        }
     }
 
-    static async getAllReviews() {
-        const query = `SELECT * FROM reviews ORDER BY id`;
-        return await getQuery(query);
-    }
+    async login() {
+        try {
+            const userData = await db.one(`
+                select 
+                    id,
+                    first_name,
+                    last_name,
+                    password
+                from users where 
+                    email = $1`,
+                [this.email]);
+            return userData;
+        } catch(err) {
+            return err.message;
+        }
 
-    static async addReview(review, stars, id) {
-        const query = `INSERT INTO reviews (review, stars, restaurant_id) VALUES ('${review}',${parseInt(stars)},${id})`;
-        return await getQuery(query);
+        
     }
 }
-
-async function getQuery(query) {
-    try {
-        const response = await db.result(query);
-        return response;
-    } catch (err) {
-        return err.message;
-    }
-}
-
 
 module.exports = User;
