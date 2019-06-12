@@ -1,5 +1,4 @@
-const db = require('./conn.js'),
-    bcrypt = require('bcryptjs');
+const db = require('./conn.js');
 
 class User {
     constructor(id, first_name, last_name, email, password) {
@@ -10,54 +9,35 @@ class User {
         this.password = password;
     }
 
-    checkPassword(hashedPassword) {
-        return bcrypt.compareSync(this.password, hashedPassword);
-    }
 
     async save() {
         try {
             const response = await db.one(`
-                insert into users 
-                    (first_name, last_name, email, password) 
-                values 
-                    ($1, $2, $3, $4) 
-                returning id
-                `, [this.first_name, this.last_name, this.email, this.password]);
-            console.log("user was created with id:", response.id);
+        insert into users
+        (first_name, last_name, email, password)
+        values
+            ($1, $2, $3, $4)
+        returning id
+        `, [this.first_name, this.last_name, this.email, this.password]);
             return response;
+
+        } catch (err) {
+            return err.message
+        }
+    }
+
+    async getUserByEmail() {
+        try {
+            const userData = await db.one(`
+                select id, first_name, last_name, password
+                    from users
+                where email = $1`, [this.email]);
+            return userData;
         } catch (err) {
             return err.message;
         }
     }
 
-    async getOneUser() {
-        try {
-            const userData = await db.one(
-                Selection,
-            )
-        } catch(err) {
-            return err.message;
-        }
-    }
-
-    async login() {
-        try {
-            const userData = await db.one(`
-                select 
-                    id,
-                    first_name,
-                    last_name,
-                    password
-                from users where 
-                    email = $1`,
-                [this.email]);
-            return userData;
-        } catch(err) {
-            return err.message;
-        }
-
-        
-    }
 }
 
 module.exports = User;
